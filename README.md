@@ -53,16 +53,45 @@ Financial data analysis is messy. You spend **80% of your time** cleaning, valid
 pip install fda-toolkit
 ```
 
-Or upgrade to latest:
+### Update to Latest Version
+
+**Using pip:**
 ```bash
 pip install --upgrade fda-toolkit
+```
+
+**Using uv (faster):**
+```bash
+uv pip install --upgrade fda-toolkit
+```
+
+**In Jupyter Notebooks:**
+```python
+# Add this to a cell and run it
+%pip install --upgrade fda-toolkit
+
+# Or with uv
+!uv pip install --upgrade fda-toolkit
+
+# Then restart your kernel
+```
+
+**For Projects with requirements.txt:**
+```bash
+# Update the version in requirements.txt
+fda-toolkit>=0.3.0
+
+# Then reinstall
+pip install -r requirements.txt --upgrade
+# or with uv
+uv pip install -r requirements.txt
 ```
 
 ### Check Version
 
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # 0.2.5
+print(ftk.__version__)  # Should show 0.3.0 or later
 ```
 
 ### Use in 3 Lines
