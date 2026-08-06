@@ -8,8 +8,9 @@
   <em>Clean. Validate. Analyze. Financial data made simple.</em>
 </div>
 
-[![PyPI version](https://img.shields.io/badge/PyPI-0.2.8-blue)](https://pypi.org/project/fda-toolkit/)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
+[![PyPI version](https://img.shields.io/pypi/v/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
