@@ -81,6 +81,9 @@ ftk.quick_check(df_clean)  # Profile results
 # See what's available (67 functions with tooltips)
 ftk.info()
 
+# Filter to all core function groups
+ftk.info(category='Core')
+
 # Filter by category
 ftk.info(category='Finance')
 

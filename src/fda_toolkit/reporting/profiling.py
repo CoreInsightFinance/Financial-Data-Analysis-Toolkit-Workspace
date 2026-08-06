@@ -292,7 +292,8 @@ def info(category: Optional[str] = None, module: Optional[str] = None):
     from the dynamic registry. Hover over function names to see descriptions.
 
     Args:
-        category (str): Filter by category. Default: None (all functions)
+        category (str): Filter by category. ``"Core"`` returns all functions
+            from the core package. Default: None (all functions)
         module (str): Filter by module. Default: None (all modules)
 
     Returns:
@@ -300,6 +301,7 @@ def info(category: Optional[str] = None, module: Optional[str] = None):
 
     Example:
         >>> functions = info()
+        >>> core_funcs = info(category='Core')
         >>> finance_funcs = info(category='Finance')
         >>> parsing_funcs = info(module='finance.parsing')
         >>> both = info(category='Finance', module='finance.parsing')
@@ -335,7 +337,13 @@ def info(category: Optional[str] = None, module: Optional[str] = None):
     )
 
     if category:
-        df = df[df["category"].str.lower() == category.lower()].reset_index(drop=True)
+        if category.casefold() == "core":
+            # Core functions are organized into descriptive categories such as
+            # Data Quality and Type Conversion. Treat "Core" as their umbrella
+            # category without replacing those useful labels in the output.
+            df = df[df["module"].str.casefold().str.startswith("core.")].reset_index(drop=True)
+        else:
+            df = df[df["category"].str.casefold() == category.casefold()].reset_index(drop=True)
     
     if module:
         df = df[df["module"].str.lower() == module.lower()].reset_index(drop=True)

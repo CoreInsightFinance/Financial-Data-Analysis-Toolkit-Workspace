@@ -47,4 +47,5 @@ src/fda_toolkit/validation/integrity.py
 src/fda_toolkit/validation/ranges.py
 src/fda_toolkit/validation/registry.py
 src/fda_toolkit/validation/schema.py
+tests/test_info.py
 tests/test_smoke_imports.py
