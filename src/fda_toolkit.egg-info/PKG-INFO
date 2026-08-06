@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: fda-toolkit
-Version: 0.2.9
+Version: 0.3.0
 Summary: Financial Data Analysis toolkit — 67 production-ready Python functions for cleaning, validating & analyzing financial data with audit trails.
 Author-email: Teslim Adeyanju <info@adeyanjuteslim.co.uk>
 License-Expression: MIT
