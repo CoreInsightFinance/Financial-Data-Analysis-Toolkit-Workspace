@@ -401,7 +401,14 @@ def info(
 
     audit_log("info", before=None, after=df)
 
-    styled = df.style.set_properties(**{"text-align": "left"})
+    styled = df.style.set_properties(**{"text-align": "left"}).set_table_styles(
+        [
+            {
+                "selector": "th",
+                "props": [("text-align", "left")],
+            }
+        ]
+    )
     styled = styled.set_uuid("fda-toolkit-info")
 
     return styled

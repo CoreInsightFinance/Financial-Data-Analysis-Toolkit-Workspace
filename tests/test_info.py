@@ -48,6 +48,13 @@ def test_info_defaults_to_level_sort() -> None:
     assert default_result.equals(level_result)
 
 
+def test_info_left_aligns_headers_and_values() -> None:
+    html = ftk.info("core").to_html()
+
+    assert "#T_fda-toolkit-info th" in html
+    assert "text-align: left;" in html
+
+
 def test_info_maps_io_module_to_input_output_level() -> None:
     result = ftk.info(level="input_output").data
 

@@ -1,6 +1,6 @@
 """Top level imports for common FDA workflows."""
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 # Core functions
 from fda_toolkit.core.columns import (

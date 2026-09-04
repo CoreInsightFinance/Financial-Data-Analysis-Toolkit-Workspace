@@ -79,7 +79,7 @@ uv pip install --upgrade fda-toolkit
 **For Projects with requirements.txt:**
 ```bash
 # Update the version in requirements.txt
-fda-toolkit>=0.4.0
+fda-toolkit>=0.4.1
 
 # Then reinstall
 pip install -r requirements.txt --upgrade
@@ -91,7 +91,7 @@ uv pip install -r requirements.txt
 
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # Should show 0.4.0 or later
+print(ftk.__version__)  # Should show 0.4.1 or later
 ```
 
 ### Use in 3 Lines
