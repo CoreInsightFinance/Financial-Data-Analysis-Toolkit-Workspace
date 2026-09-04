@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: fda-toolkit
-Version: 0.3.0
+Version: 0.3.1
 Summary: Financial Data Analysis toolkit — 67 production-ready Python functions for cleaning, validating & analyzing financial data with audit trails.
 Author-email: Teslim Adeyanju <info@adeyanjuteslim.co.uk>
 License-Expression: MIT
@@ -28,6 +28,7 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: pandas>=2.0
 Requires-Dist: numpy>=1.24
+Requires-Dist: jinja2>=3.1
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: ruff>=0.5; extra == "dev"
@@ -43,8 +44,9 @@ Requires-Dist: mypy>=1.8; extra == "dev"
   <em>Clean. Validate. Analyze. Financial data made simple.</em>
 </div>
 
-[![PyPI version](https://img.shields.io/badge/PyPI-0.2.8-blue)](https://pypi.org/project/fda-toolkit/)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
+[![PyPI version](https://img.shields.io/pypi/v/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -87,16 +89,45 @@ Financial data analysis is messy. You spend **80% of your time** cleaning, valid
 pip install fda-toolkit
 ```
 
-Or upgrade to latest:
+### Update to Latest Version
+
+**Using pip:**
 ```bash
 pip install --upgrade fda-toolkit
+```
+
+**Using uv (faster):**
+```bash
+uv pip install --upgrade fda-toolkit
+```
+
+**In Jupyter Notebooks:**
+```python
+# Add this to a cell and run it
+%pip install --upgrade fda-toolkit
+
+# Or with uv
+!uv pip install --upgrade fda-toolkit
+
+# Then restart your kernel
+```
+
+**For Projects with requirements.txt:**
+```bash
+# Update the version in requirements.txt
+fda-toolkit>=0.3.1
+
+# Then reinstall
+pip install -r requirements.txt --upgrade
+# or with uv
+uv pip install -r requirements.txt
 ```
 
 ### Check Version
 
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # 0.2.5
+print(ftk.__version__)  # Should show 0.3.1 or later
 ```
 
 ### Use in 3 Lines
@@ -116,20 +147,20 @@ ftk.quick_check(df_clean)  # Profile results
 # See what's available (67 functions with tooltips)
 ftk.info()
 
-# Filter to all core function groups
-ftk.info(category='Core')
+# Sort functions into the eight package levels
+ftk.info('level')
 
-# Filter by category
-ftk.info(category='Finance')
+# Filter by level (the level= form is also supported)
+ftk.info('finance')
 
 # Filter by module
 ftk.info(module='finance.parsing')
 
 # Combine filters
-ftk.info(category='Finance', module='finance.parsing')
+ftk.info(level='finance', module='finance.parsing')
 ```
 
-**Hover over function names** to see descriptions (in Jupyter notebooks).
+The `detail` column gives a short note on what each function does.
 
 ---
 
@@ -377,7 +408,7 @@ Explore the full API:
 
 ```python
 ftk.info()                           # List all functions
-ftk.info(category="Finance")         # Filter by domain
+ftk.info("finance")                  # Filter by package level
 ftk.get_data_summary(df)            # Profile a dataset
 ftk.profile_report(df)              # Detailed analysis
 ```

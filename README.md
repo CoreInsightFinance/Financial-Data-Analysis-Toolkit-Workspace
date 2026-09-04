@@ -79,7 +79,7 @@ uv pip install --upgrade fda-toolkit
 **For Projects with requirements.txt:**
 ```bash
 # Update the version in requirements.txt
-fda-toolkit>=0.3.0
+fda-toolkit>=0.3.1
 
 # Then reinstall
 pip install -r requirements.txt --upgrade
@@ -91,7 +91,7 @@ uv pip install -r requirements.txt
 
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # Should show 0.3.0 or later
+print(ftk.__version__)  # Should show 0.3.1 or later
 ```
 
 ### Use in 3 Lines
@@ -111,20 +111,20 @@ ftk.quick_check(df_clean)  # Profile results
 # See what's available (67 functions with tooltips)
 ftk.info()
 
-# Filter to all core function groups
-ftk.info(category='Core')
+# Sort functions into the eight package levels
+ftk.info('level')
 
-# Filter by category
-ftk.info(category='Finance')
+# Filter by level (the level= form is also supported)
+ftk.info('finance')
 
 # Filter by module
 ftk.info(module='finance.parsing')
 
 # Combine filters
-ftk.info(category='Finance', module='finance.parsing')
+ftk.info(level='finance', module='finance.parsing')
 ```
 
-**Hover over function names** to see descriptions (in Jupyter notebooks).
+The `detail` column gives a short note on what each function does.
 
 ---
 
@@ -372,7 +372,7 @@ Explore the full API:
 
 ```python
 ftk.info()                           # List all functions
-ftk.info(category="Finance")         # Filter by domain
+ftk.info("finance")                  # Filter by package level
 ftk.get_data_summary(df)            # Profile a dataset
 ftk.profile_report(df)              # Detailed analysis
 ```

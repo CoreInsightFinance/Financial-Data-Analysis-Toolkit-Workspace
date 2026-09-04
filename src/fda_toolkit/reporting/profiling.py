@@ -7,13 +7,27 @@ data structure, quality, and characteristics.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
+from fda_toolkit.registry import FUNCTION_REGISTRY, register_function
 from fda_toolkit.utils.logging import audit_log
-from fda_toolkit.registry import FUNCTION_REGISTRY
-from fda_toolkit.registry import register_function
+
+if TYPE_CHECKING:
+    from pandas.io.formats.style import Styler
+
+
+INFO_LEVELS = (
+    "core",
+    "features",
+    "finance",
+    "validation",
+    "reporting",
+    "input_output",
+    "pipelines",
+    "utils",
+)
 
 
 @register_function(
@@ -113,7 +127,7 @@ def missingness_profile(df: pd.DataFrame) -> pd.DataFrame:
     category="Reporting",
     module="reporting.profiling",
 )
-def get_data_summary(df: pd.DataFrame) -> Dict[str, Any]:
+def get_data_summary(df: pd.DataFrame) -> dict[str, Any]:
     """
     Return a compact summary of the dataset.
 
@@ -197,7 +211,7 @@ def memory_profile(df: pd.DataFrame) -> pd.DataFrame:
     category="Reporting",
     module="reporting.profiling",
 )
-def profile_report(df: pd.DataFrame) -> Dict[str, Any]:
+def profile_report(df: pd.DataFrame) -> dict[str, Any]:
     """
     Return a combined profile report.
 
@@ -259,7 +273,7 @@ def quick_check(df: pd.DataFrame) -> None:
     summary = get_data_summary(df)
 
     print(f"\n{'='*60}")
-    print(f"FDA Toolkit Quick Check")
+    print("FDA Toolkit Quick Check")
     print(f"{'='*60}")
     print(f"\nShape:                  {summary['shape']}")
     print(f"Total cells:            {summary['total_cells']:,}")
@@ -270,7 +284,7 @@ def quick_check(df: pd.DataFrame) -> None:
     missing = missingness_profile(df)
     high_missing = missing[missing["missing_percent"] > 50]
     if len(high_missing) > 0:
-        print(f"\n⚠️  High missing values (>50%):")
+        print("\n⚠️  High missing values (>50%):")
         for _, row in high_missing.iterrows():
             print(f"   {row['column']}: {row['missing_percent']}%")
 
@@ -284,31 +298,56 @@ def quick_check(df: pd.DataFrame) -> None:
     category="Reporting",
     module="reporting.profiling",
 )
-def info(category: Optional[str] = None, module: Optional[str] = None):
+def info(
+    sort_by: str | None = None,
+    *,
+    level: str | None = None,
+    module: str | None = None,
+) -> Styler:
     """
-    Return a function reference table with tooltips.
+    Return a sortable function reference table.
 
     Lists all available FDA Toolkit functions, automatically updated
-    from the dynamic registry. Hover over function names to see descriptions.
+    from the dynamic registry. Each row includes the package level, module,
+    function name, and a short note describing the function's use.
 
     Args:
-        category (str): Filter by category. ``"Core"`` returns all functions
-            from the core package. Default: None (all functions)
+        sort_by (str): Column to sort by (``"level"``, ``"module"``,
+            ``"function"``, or ``"detail"``), or a package level to filter
+            directly (for example, ``info("core")``). Default: None (level order)
+        level (str): Filter by package level. Valid levels are ``core``,
+            ``features``, ``finance``, ``validation``, ``reporting``,
+            ``input_output``, ``pipelines``, and ``utils``.
         module (str): Filter by module. Default: None (all modules)
 
     Returns:
-        pd.io.formats.style.Styler: Styled DataFrame with tooltip docstrings
+        pd.io.formats.style.Styler: Styled function reference table
 
     Example:
         >>> functions = info()
-        >>> core_funcs = info(category='Core')
-        >>> finance_funcs = info(category='Finance')
+        >>> functions_by_level = info('level')
+        >>> core_funcs = info('core')
         >>> parsing_funcs = info(module='finance.parsing')
-        >>> both = info(category='Finance', module='finance.parsing')
+        >>> both = info(level='finance', module='finance.parsing')
     """
+    valid_sort_columns = {"level", "module", "function", "detail"}
+    normalized_argument = "level" if sort_by is None else sort_by.casefold()
+    if normalized_argument == "io":
+        normalized_argument = "input_output"
+
+    if normalized_argument in INFO_LEVELS:
+        if level is not None and level.casefold() not in {normalized_argument, "io"}:
+            raise ValueError("Specify a level either positionally or with level=, not both")
+        level = normalized_argument
+        normalized_sort = "level"
+    elif normalized_argument in valid_sort_columns:
+        normalized_sort = normalized_argument
+    else:
+        valid = ", ".join((*INFO_LEVELS, *sorted(valid_sort_columns)))
+        raise ValueError(f"argument must be a level or sort column: {valid}")
+
     rows = []
-    docstrings = {}
-    
+
     for name, meta in FUNCTION_REGISTRY.items():
         doc = meta.get("doc", "")
         # Extract first non-empty line from docstring
@@ -319,45 +358,50 @@ def info(category: Optional[str] = None, module: Optional[str] = None):
                 if stripped:
                     first_line = stripped
                     break
-        
-        func_name = f"{name}()"
+
+        module_name = meta.get("module", "unknown")
+        package_name = module_name.split(".", maxsplit=1)[0].casefold()
+        level_name = "input_output" if package_name == "io" else package_name
+
         rows.append(
             {
-                "function": func_name,
-                "category": meta.get("category", "Uncategorized"),
-                "module": meta.get("module", "unknown"),
+                "level": level_name,
+                "module": module_name,
+                "function": f"{name}()",
+                "detail": first_line,
             }
         )
-        docstrings[func_name] = first_line
 
-    df = (
-        pd.DataFrame(rows)
-        .sort_values(["category", "module", "function"])
-        .reset_index(drop=True)
-    )
+    df = pd.DataFrame(rows, columns=["level", "module", "function", "detail"])
 
-    if category:
-        if category.casefold() == "core":
-            # Core functions are organized into descriptive categories such as
-            # Data Quality and Type Conversion. Treat "Core" as their umbrella
-            # category without replacing those useful labels in the output.
-            df = df[df["module"].str.casefold().str.startswith("core.")].reset_index(drop=True)
-        else:
-            df = df[df["category"].str.casefold() == category.casefold()].reset_index(drop=True)
-    
+    if level:
+        normalized_level = level.casefold()
+        if normalized_level == "io":
+            normalized_level = "input_output"
+        if normalized_level not in INFO_LEVELS:
+            valid = ", ".join(INFO_LEVELS)
+            raise ValueError(f"level must be one of: {valid}")
+        df = df[df["level"].str.casefold() == normalized_level]
+
     if module:
-        df = df[df["module"].str.lower() == module.lower()].reset_index(drop=True)
+        df = df[df["module"].str.casefold() == module.casefold()]
+
+    if normalized_sort == "level":
+        level_order = {name: position for position, name in enumerate(INFO_LEVELS)}
+        df = (
+            df.assign(_level_order=df["level"].map(level_order).fillna(len(INFO_LEVELS)))
+            .sort_values(["_level_order", "module", "function"])
+            .drop(columns="_level_order")
+        )
+    else:
+        secondary_columns = [column for column in ("level", "module", "function") if column != normalized_sort]
+        df = df.sort_values([normalized_sort, *secondary_columns])
+
+    df = df.reset_index(drop=True)
 
     audit_log("info", before=None, after=df)
-    
-    # Apply tooltips using pandas Styler
-    def make_tooltip(val):
-        tooltip = docstrings.get(val, "")
-        return f'data-toggle="tooltip" title="{tooltip}"' if tooltip else ""
-    
-    styled = df.style.set_properties(**{'text-align': 'left'})
-    
-    # Add HTML attributes for tooltips (Jupyter/notebook compatible)
+
+    styled = df.style.set_properties(**{"text-align": "left"})
     styled = styled.set_uuid("fda-toolkit-info")
-    
+
     return styled

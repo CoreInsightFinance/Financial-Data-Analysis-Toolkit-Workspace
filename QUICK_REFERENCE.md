@@ -47,11 +47,12 @@ clean_df = ftk.quick_clean_finance(
 # All functions
 all_funcs = ftk.info()
 
-# Filter by category
-core_funcs = ftk.info(category='Data Quality')
+# Group by level or filter to one level
+grouped_funcs = ftk.info('level')
+core_funcs = ftk.info('core')
 
 # List with details
-print(all_funcs[['function', 'category', 'module']])
+print(all_funcs.data[['level', 'module', 'function', 'detail']])
 ```
 
 ---

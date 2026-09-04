@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fda-toolkit"
-version = "0.3.0"
+version = "0.3.1"
 description = "Financial Data Analysis toolkit — 67 production-ready Python functions for cleaning, validating & analyzing financial data with audit trails."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,7 +40,8 @@ classifiers = [
 ]
 dependencies = [
   "pandas>=2.0",
-  "numpy>=1.24"
+  "numpy>=1.24",
+  "jinja2>=3.1"
 ]
 
 [project.urls]
