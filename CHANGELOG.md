@@ -5,6 +5,21 @@ All notable changes to the FDA Toolkit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-04
+
+### Added
+- Ten column-management functions for renaming, selecting, reordering, combining,
+  splitting, type classification, and empty, constant, or sparse column removal
+- A new `core.rows` module with nine functions for missing rows, spreadsheet headers,
+  summary rows, conditional filtering, and date or numeric range filtering
+- `convert_date_columns()` for converting multiple date columns in one operation
+- Level-based imports through `from fda_toolkit import core`
+- End-to-end tests for the new cleaning workflow
+
+### Changed
+- Expanded the toolkit from 67 to 87 registered functions
+- Expanded the core level to 40 functions
+
 ## [0.3.1] - 2026-09-04
 
 ### Added

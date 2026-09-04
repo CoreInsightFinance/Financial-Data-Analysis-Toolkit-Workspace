@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fda-toolkit"
-version = "0.3.1"
-description = "Financial Data Analysis toolkit — 67 production-ready Python functions for cleaning, validating & analyzing financial data with audit trails."
+version = "0.4.0"
+description = "Financial Data Analysis toolkit — 87 production-ready Python functions for cleaning, validating & analyzing financial data with audit trails."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

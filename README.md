@@ -18,7 +18,7 @@
 
 Financial data analysis is messy. You spend **80% of your time** cleaning, validating, and transforming data instead of analyzing it. FDA Toolkit eliminates that pain by providing:
 
-- **67 production-ready functions** grouped into 8 intelligent modules
+- **87 production-ready functions** grouped into 8 intelligent modules
 - **One-line pipelines** for common workflows (e.g., `ftk.quick_clean_finance()`)
 - **Finance-aware validation** — understand sign conventions, entity names, currency formats
 - **Audit trail** — every operation logged for compliance and debugging
@@ -32,7 +32,7 @@ Financial data analysis is messy. You spend **80% of your time** cleaning, valid
 
 | Module | Functions | Purpose |
 |--------|-----------|---------|
-| **core** | 17 | Column cleaning, types, duplicates, missing, outliers, text |
+| **core** | 40 | Column and row cleaning, types, duplicates, missing, outliers, text |
 | **features** | 7 | Date & categorical feature engineering |
 | **finance** | 11 | Currency parsing, entity standardization, financial validation |
 | **validation** | 9 | Schema, ranges, integrity, reconciliation |
@@ -40,7 +40,7 @@ Financial data analysis is messy. You spend **80% of your time** cleaning, valid
 | **io** | 5 | Safe CSV/Excel reading, chunked processing, parquet export |
 | **pipelines** | 2 | Pre-built `quick_clean()` and `quick_clean_finance()` |
 | **utils** | 6 | Logging, security, memory optimization |
-| **TOTAL** | **67** | Production-ready functions |
+| **TOTAL** | **87** | Production-ready functions |
 
 
 
@@ -79,7 +79,7 @@ uv pip install --upgrade fda-toolkit
 **For Projects with requirements.txt:**
 ```bash
 # Update the version in requirements.txt
-fda-toolkit>=0.3.1
+fda-toolkit>=0.4.0
 
 # Then reinstall
 pip install -r requirements.txt --upgrade
@@ -91,7 +91,7 @@ uv pip install -r requirements.txt
 
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # Should show 0.3.1 or later
+print(ftk.__version__)  # Should show 0.4.0 or later
 ```
 
 ### Use in 3 Lines
@@ -108,7 +108,7 @@ ftk.quick_check(df_clean)  # Profile results
 ### Discover All Functions
 
 ```python
-# See what's available (67 functions with tooltips)
+# See all 87 available functions and their details
 ftk.info()
 
 # Sort functions into the eight package levels
@@ -130,17 +130,18 @@ The `detail` column gives a short note on what each function does.
 
 ## 📚 What's Inside?
 
-### Core Data Cleaning (17 functions)
+### Core Data Cleaning (40 functions)
 Handle the fundamentals with confidence:
 
 ```python
-from fda_toolkit.core import columns, duplicates, missing, outliers, text, types
+from fda_toolkit import core
 
-df = columns.clean_column_headers(df)           # 'Name ' → 'name'
-df = types.clean_numeric_column(df['amount'])   # '$1,234.56' → 1234.56
-df = missing.fill_missing(df, strategy='mean')  # Handle NaN intelligently
-df = duplicates.remove_duplicates(df, subset=['id'])
-df = outliers.flag_outliers(df, 'amount')       # Flag statistical outliers
+df = core.clean_column_headers(df)               # 'Name ' → 'name'
+df = core.drop_empty_columns(df)                 # Remove entirely blank columns
+df = core.drop_empty_rows(df)                    # Remove entirely blank rows
+df = core.remove_repeated_headers(df)            # Remove headers embedded in data
+df = core.convert_date_columns(df, ['date'])     # Convert several date columns
+groups = core.classify_columns(df)               # Group columns by data type
 ```
 
 ### Finance-Specific (11 functions)

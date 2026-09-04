@@ -6,11 +6,14 @@ DataFrame column headers for reliable downstream analysis.
 """
 
 from __future__ import annotations
-from typing import Any
+
+from collections.abc import Iterable
+from typing import Any, Literal
+
 import pandas as pd
 
-from fda_toolkit.utils.logging import audit_log
 from fda_toolkit.registry import register_function
+from fda_toolkit.utils.logging import audit_log
 
 
 @register_function(
@@ -135,3 +138,190 @@ def make_unique_columns(df: pd.DataFrame, copy: bool = True) -> pd.DataFrame:
     audit_log("make_unique_columns", before=None, after=df)
 
     return df
+
+
+def _require_columns(df: pd.DataFrame, columns: Iterable[str]) -> list[str]:
+    selected = list(columns)
+    missing = [column for column in selected if column not in df.columns]
+    if missing:
+        raise ValueError(f"Columns not found: {missing}")
+    return selected
+
+
+@register_function(name="rename_columns", category="Column Management", module="core.columns")
+def rename_columns(df: pd.DataFrame, mapping: dict[str, str], copy: bool = True) -> pd.DataFrame:
+    """Rename columns with validation for missing names and duplicate results."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    if not isinstance(mapping, dict):
+        raise TypeError("mapping must be a dictionary")
+    _require_columns(df, mapping)
+    result = df.copy() if copy else df
+    renamed = [mapping.get(str(column), column) for column in result.columns]
+    if len(renamed) != len(set(renamed)):
+        raise ValueError("Renaming would create duplicate column names")
+    result.columns = renamed
+    audit_log("rename_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="drop_empty_columns", category="Column Management", module="core.columns")
+def drop_empty_columns(df: pd.DataFrame, copy: bool = True) -> pd.DataFrame:
+    """Remove columns containing only missing or blank values."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    result = df.copy() if copy else df
+    empty = result.apply(lambda column: column.isna() | column.astype("string").str.strip().eq(""))
+    result.drop(columns=empty.all()[lambda values: values].index, inplace=True)
+    audit_log("drop_empty_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(
+    name="drop_constant_columns", category="Column Management", module="core.columns"
+)
+def drop_constant_columns(
+    df: pd.DataFrame, include_missing: bool = True, copy: bool = True
+) -> pd.DataFrame:
+    """Remove columns containing no more than one distinct value."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    result = df.copy() if copy else df
+    constant = [
+        column
+        for column in result.columns
+        if result[column].nunique(dropna=not include_missing) <= 1
+    ]
+    result.drop(columns=constant, inplace=True)
+    audit_log("drop_constant_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="drop_sparse_columns", category="Column Management", module="core.columns")
+def drop_sparse_columns(
+    df: pd.DataFrame, threshold: float = 0.9, copy: bool = True
+) -> pd.DataFrame:
+    """Remove columns whose missing-value proportion meets or exceeds a threshold."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    if not 0 <= threshold <= 1:
+        raise ValueError("threshold must be between 0 and 1")
+    result = df.copy() if copy else df
+    sparse = result.columns[result.isna().mean() >= threshold]
+    result.drop(columns=sparse, inplace=True)
+    audit_log("drop_sparse_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="select_columns", category="Column Management", module="core.columns")
+def select_columns(df: pd.DataFrame, columns: Iterable[str], copy: bool = True) -> pd.DataFrame:
+    """Keep selected columns in the requested order."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    selected = _require_columns(df, columns)
+    result = df.loc[:, selected]
+    if copy:
+        result = result.copy()
+    audit_log("select_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="reorder_columns", category="Column Management", module="core.columns")
+def reorder_columns(
+    df: pd.DataFrame, columns: Iterable[str], append_remaining: bool = True, copy: bool = True
+) -> pd.DataFrame:
+    """Move selected columns to the front in a specified order."""
+    selected = _require_columns(df, columns)
+    remaining = [column for column in df.columns if column not in selected]
+    if not append_remaining and remaining:
+        raise ValueError(f"Columns omitted from order: {remaining}")
+    return select_columns(df, [*selected, *remaining] if append_remaining else selected, copy=copy)
+
+
+@register_function(name="combine_columns", category="Column Management", module="core.columns")
+def combine_columns(
+    df: pd.DataFrame,
+    columns: Iterable[str],
+    output_column: str,
+    separator: str = " ",
+    drop_original: bool = False,
+    copy: bool = True,
+) -> pd.DataFrame:
+    """Combine selected columns into one text column."""
+    selected = _require_columns(df, columns)
+    if not selected:
+        raise ValueError("columns must contain at least one column")
+    result = df.copy() if copy else df
+    result[output_column] = (
+        result[selected].fillna("").astype(str).agg(separator.join, axis=1).str.strip()
+    )
+    if drop_original:
+        result.drop(
+            columns=[column for column in selected if column != output_column], inplace=True
+        )
+    audit_log("combine_columns", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="split_column", category="Column Management", module="core.columns")
+def split_column(
+    df: pd.DataFrame,
+    column: str,
+    separator: str,
+    output_columns: Iterable[str],
+    max_splits: int = -1,
+    drop_original: bool = False,
+    copy: bool = True,
+) -> pd.DataFrame:
+    """Split one text column into named output columns."""
+    _require_columns(df, [column])
+    names = list(output_columns)
+    if not names:
+        raise ValueError("output_columns must contain at least one name")
+    result = df.copy() if copy else df
+    parts = result[column].astype("string").str.split(separator, n=max_splits, expand=True)
+    if parts.shape[1] > len(names):
+        raise ValueError("output_columns does not provide enough names for the split values")
+    parts = parts.reindex(columns=range(len(names)))
+    parts.columns = names
+    for name in names:
+        result[name] = parts[name]
+    if drop_original and column not in names:
+        result.drop(columns=column, inplace=True)
+    audit_log("split_column", before=df.shape, after=result.shape)
+    return result
+
+
+@register_function(name="classify_columns", category="Column Management", module="core.columns")
+def classify_columns(df: pd.DataFrame) -> dict[str, list[str]]:
+    """Group column names into numerical, categorical, datetime, and boolean types."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    groups = {
+        "numerical": df.select_dtypes(include="number", exclude="bool").columns.tolist(),
+        "categorical": df.select_dtypes(include=["object", "string", "category"]).columns.tolist(),
+        "datetime": df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist(),
+        "boolean": df.select_dtypes(include="bool").columns.tolist(),
+    }
+    audit_log("classify_columns", before=df.shape, after=groups)
+    return groups
+
+
+@register_function(
+    name="select_columns_by_type", category="Column Management", module="core.columns"
+)
+def select_columns_by_type(
+    df: pd.DataFrame,
+    column_type: Literal["numerical", "categorical", "datetime", "boolean"],
+    return_type: Literal["columns", "dataframe"] = "columns",
+    copy: bool = True,
+) -> list[str] | pd.DataFrame:
+    """Return column names or data for one classified data type."""
+    groups = classify_columns(df)
+    if column_type not in groups:
+        raise ValueError(f"Unknown column_type: {column_type}")
+    if return_type == "columns":
+        return groups[column_type]
+    if return_type == "dataframe":
+        return select_columns(df, groups[column_type], copy=copy)
+    raise ValueError("return_type must be 'columns' or 'dataframe'")

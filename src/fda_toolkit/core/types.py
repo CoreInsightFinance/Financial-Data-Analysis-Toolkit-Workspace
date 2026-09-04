@@ -7,12 +7,13 @@ for numeric, boolean, and date columns.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 import pandas as pd
 
-from fda_toolkit.utils.logging import audit_log
 from fda_toolkit.registry import register_function
+from fda_toolkit.utils.logging import audit_log
 
 
 @register_function(
@@ -22,7 +23,7 @@ from fda_toolkit.registry import register_function
 )
 def convert_data_types(
     df: pd.DataFrame,
-    dtype_map: Dict[str, Any],
+    dtype_map: dict[str, Any],
     errors: str = "raise",
     copy: bool = True,
 ) -> pd.DataFrame:
@@ -66,7 +67,7 @@ def convert_data_types(
 
         try:
             df[col] = df[col].astype(dtype)
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             if errors == "raise":
                 raise
             elif errors == "coerce":
@@ -168,9 +169,7 @@ def clean_boolean_column(
     true_set = set(str(v).lower() for v in true_values)
     false_set = set(str(v).lower() for v in false_values)
 
-    s = s_lower.map(
-        lambda x: True if x in true_set else (False if x in false_set else None)
-    )
+    s = s_lower.map(lambda x: True if x in true_set else (False if x in false_set else None))
 
     audit_log("clean_boolean_column", before=None, after=s)
     return s
@@ -218,3 +217,47 @@ def clean_date_column(
 
     audit_log("clean_date_column", before=None, after=s)
     return s
+
+
+@register_function(
+    name="convert_date_columns",
+    category="Type Conversion",
+    module="core.types",
+)
+def convert_date_columns(
+    df: pd.DataFrame,
+    columns: Iterable[str],
+    dayfirst: bool = True,
+    errors: str = "coerce",
+    utc: bool = False,
+    formats: dict[str, str] | None = None,
+    normalize: bool = False,
+    copy: bool = True,
+) -> pd.DataFrame:
+    """Convert multiple DataFrame columns to datetime values."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    selected = list(columns)
+    missing = [column for column in selected if column not in df.columns]
+    if missing:
+        raise ValueError(f"Columns not found: {missing}")
+    if errors not in {"raise", "coerce"}:
+        raise ValueError("errors must be 'raise' or 'coerce'")
+    unknown_formats = set(formats or {}) - set(selected)
+    if unknown_formats:
+        raise ValueError(f"Formats provided for unselected columns: {sorted(unknown_formats)}")
+
+    result = df.copy() if copy else df
+    for column in selected:
+        result[column] = pd.to_datetime(
+            result[column],
+            format=(formats or {}).get(column),
+            dayfirst=dayfirst,
+            errors=errors,
+            utc=utc,
+        )
+        if normalize:
+            result[column] = result[column].dt.normalize()
+
+    audit_log("convert_date_columns", before=df.shape, after=result.shape)
+    return result

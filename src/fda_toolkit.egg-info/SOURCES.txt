@@ -13,6 +13,7 @@ src/fda_toolkit/core/duplicates.py
 src/fda_toolkit/core/missing.py
 src/fda_toolkit/core/outliers.py
 src/fda_toolkit/core/registry.py
+src/fda_toolkit/core/rows.py
 src/fda_toolkit/core/text.py
 src/fda_toolkit/core/types.py
 src/fda_toolkit/features/__init__.py
@@ -47,5 +48,6 @@ src/fda_toolkit/validation/integrity.py
 src/fda_toolkit/validation/ranges.py
 src/fda_toolkit/validation/registry.py
 src/fda_toolkit/validation/schema.py
+tests/test_core_cleaning.py
 tests/test_info.py
 tests/test_smoke_imports.py
