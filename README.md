@@ -1,4 +1,4 @@
-# 📊 FDA Toolkit
+# FDA Toolkit
 
 > **Financial Data Analysis Made Simple** — A production-grade Python toolkit for loading, cleaning, validating, and analyzing financial data with one-line pipelines.
 
@@ -128,7 +128,7 @@ The `detail` column gives a short note on what each function does.
 
 ---
 
-## 📚 What's Inside?
+## What's Inside?
 
 ### Core Data Cleaning (40 functions)
 Handle the fundamentals with confidence:
@@ -300,7 +300,7 @@ df_ml = ftk.limit_cardinality(df_ml, "vendor", top_n=20)
 
 # 5. Export and log
 ftk.export_parquet(df_ml, "ready_for_ml.parquet")
-print("✅ Pipeline complete with full audit trail!")
+print("Pipeline complete with full audit trail!")
 ```
 
 ---
@@ -367,7 +367,7 @@ pip install -e ".[dev]"
 
 ---
 
-## 📖 API Reference
+## API Reference
 
 Explore the full API:
 
@@ -388,7 +388,7 @@ See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns.
 
 ---
 
-## 🎯 Use Cases
+## Use Cases
 
 ✅ **Financial Reporting** — Prepare data for compliance audits  
 ✅ **ML Pipelines** — Clean & engineer features for models  
@@ -399,7 +399,7 @@ See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns.
 
 ---
 
-## 🚀 Next Steps
+## Next Steps
 
 1. **Explore functions**: `ftk.info()`
 2. **Try examples**: See [examples/01_quick_check.py](examples/01_quick_check.py)
@@ -409,13 +409,13 @@ See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns.
 
 ---
 
-## 📝 License
+## License
 
 MIT License — see LICENSE for details.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Found a bug? Have an idea? Open an issue or PR!
 
