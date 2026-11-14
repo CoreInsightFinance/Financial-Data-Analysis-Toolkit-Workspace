@@ -164,21 +164,14 @@ Functions can be called from the top level (`ftk.parse_currency`) or from their 
 
 The table under [Package at a glance](#package-at-a-glance) gives the size of each level. This section describes what each level is for and names a few representative functions. The complete, always current list, with a one line description of every function, is available from `ftk.info()`.
 
-**core.** The foundation for tidying a raw extract. Column functions such as `clean_column_headers()`, `rename_columns()` and `drop_empty_columns()` fix structure. Row functions such as `remove_repeated_headers()`, `remove_summary_rows()` and `filter_by_date_range()` deal with the leftovers of spreadsheet exports. The level also covers type conversion (`convert_date_columns()`), duplicates (`deduplicate_by_priority()`), missing values, outliers and text standardisation.
-
-**features.** Prepares data for modelling and period analysis: date parts, period keys, a fiscal calendar (`create_fiscal_calendar_features()`), lag columns and controls on category counts.
-
-**finance.** Domain logic that general purpose cleaning libraries leave out. It parses currency and percentages, standardises vendor names and reference codes, and applies accounting rules such as sign conventions (`validate_sign_conventions()`) and debit and credit balance checks.
-
-**validation.** Control checks that either raise an error or return the offending rows: required fields, allowed categories, value ranges, primary keys, referential integrity, time continuity and `reconciliation_check()` for totals before and after a transformation.
-
-**reporting.** Describes the data and tracks change: `quick_check()` and `profile_report()` for profiling, `snapshot_dataset()` and `delta_report()` for comparing versions, and `info()` for the function reference itself.
-
-**input_output.** Reads comma separated value and Excel files with existence checks and standard missing value markers, processes large files in chunks, and exports parquet files and JavaScript Object Notation reports.
-
-**pipelines.** `quick_clean()` and `quick_clean_finance()` chain the most common steps into one call. Read [Known limitations](#known-limitations) before relying on their defaults.
-
-**utils.** Masks or hashes sensitive identifiers before data is shared, and reduces memory use by downcasting numeric types.
+- **core:** The foundation for tidying a raw extract. Column functions such as `clean_column_headers()`, `rename_columns()` and `drop_empty_columns()` fix structure. Row functions such as `remove_repeated_headers()`, `remove_summary_rows()` and `filter_by_date_range()` deal with the leftovers of spreadsheet exports. The level also covers type conversion (`convert_date_columns()`), duplicates (`deduplicate_by_priority()`), missing values, outliers and text standardisation.
+- **features:** Prepares data for modelling and period analysis: date parts, period keys, a fiscal calendar (`create_fiscal_calendar_features()`), lag columns and controls on category counts.
+- **finance:** Domain logic that general purpose cleaning libraries leave out. It parses currency and percentages, standardises vendor names and reference codes, and applies accounting rules such as sign conventions (`validate_sign_conventions()`) and debit and credit balance checks.
+- **validation:** Control checks that either raise an error or return the offending rows: required fields, allowed categories, value ranges, primary keys, referential integrity, time continuity and `reconciliation_check()` for totals before and after a transformation.
+- **reporting:** Describes the data and tracks change: `quick_check()` and `profile_report()` for profiling, `snapshot_dataset()` and `delta_report()` for comparing versions, and `info()` for the function reference itself.
+- **input_output:** Reads comma separated value and Excel files with existence checks and standard missing value markers, processes large files in chunks, and exports parquet files and JavaScript Object Notation reports.
+- **pipelines:** `quick_clean()` and `quick_clean_finance()` chain the most common steps into one call. Read [Known limitations](#known-limitations) before relying on their defaults.
+- **utils:** Masks or hashes sensitive identifiers before data is shared, and reduces memory use by downcasting numeric types.
 
 ## Worked patterns
 
