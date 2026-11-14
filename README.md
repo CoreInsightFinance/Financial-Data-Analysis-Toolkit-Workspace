@@ -160,6 +160,8 @@ Functions can be called from the top level (`ftk.parse_currency`) or from their 
 
 ## Function overview
 
+![Modular architecture of the fda_toolkit package showing the eight functional levels with their function counts, the central function registry of 87 registered functions, and the info function with the audit log](assets/fda-toolkit-modular-architecture.png)
+
 The table under [Package at a glance](#package-at-a-glance) gives the size of each level. This section describes what each level is for and names a few representative functions. The complete, always current list, with a one line description of every function, is available from `ftk.info()`.
 
 **core.** The foundation for tidying a raw extract. Column functions such as `clean_column_headers()`, `rename_columns()` and `drop_empty_columns()` fix structure. Row functions such as `remove_repeated_headers()`, `remove_summary_rows()` and `filter_by_date_range()` deal with the leftovers of spreadsheet exports. The level also covers type conversion (`convert_date_columns()`), duplicates (`deduplicate_by_priority()`), missing values, outliers and text standardisation.
