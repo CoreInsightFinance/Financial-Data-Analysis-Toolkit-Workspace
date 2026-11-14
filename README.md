@@ -16,6 +16,10 @@ This project was motivated by the amount of time finance work loses to preparing
 
 ## Package at a glance
 
+![Overview of the Financial Data Analysis Toolkit showing raw financial data passing through the processing engine to clean, controlled output, the eight functional levels around the fda_toolkit package, and a before and after data cleaning example](assets/fda-toolkit-overview.png)
+
+The diagram shows the flow from a raw export, through the processing steps, to analysis ready output with an audit trail, and how the eight levels sit around the package. The table gives the size and purpose of each level.
+
 | Level | Functions | Purpose |
 | --- | ---: | --- |
 | `core` | 40 | Column and row cleaning, type conversion, duplicates, missing values, outliers and text |
