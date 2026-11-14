@@ -154,124 +154,25 @@ Functions can be called from the top level (`ftk.parse_currency`) or from their 
 - **Explicit rules over inference.** Functions that need business judgement, such as `impute_by_rule()`, `validate_sign_conventions()` and `standardize_entity_names()`, take the rule or mapping as an argument rather than guessing.
 - **Finance defaults.** The currency parser recognises the pound, dollar, euro and naira symbols, and `create_fiscal_calendar_features()` starts the fiscal year in April.
 
-## Function reference
+## Function overview
 
-### core: cleaning fundamentals (40 functions)
+The table under [Package at a glance](#package-at-a-glance) gives the size of each level. This section describes what each level is for and names a few representative functions. The complete, always current list, with a one line description of every function, is available from `ftk.info()`.
 
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `core.columns` | `clean_column_headers` | Standardise headers: lower case, underscores, no punctuation |
-| | `make_unique_columns` | Append numeric suffixes to duplicate column names |
-| | `rename_columns` | Rename with checks for missing names and duplicate results |
-| | `select_columns` | Keep chosen columns in the requested order |
-| | `reorder_columns` | Move chosen columns to the front |
-| | `combine_columns` | Join several columns into one text column |
-| | `split_column` | Split one text column into named columns |
-| | `classify_columns` | Group columns into numerical, categorical, datetime and boolean |
-| | `select_columns_by_type` | Return the names or data for one classified type |
-| | `drop_empty_columns` | Remove columns that are entirely blank |
-| | `drop_constant_columns` | Remove columns holding one distinct value |
-| | `drop_sparse_columns` | Remove columns above a missing value threshold |
-| `core.rows` | `drop_empty_rows` | Remove entirely blank rows |
-| | `drop_sparse_rows` | Remove rows above a missing value threshold |
-| | `drop_missing_required` | Remove rows with blanks in required columns |
-| | `remove_repeated_headers` | Remove header rows repeated inside the data |
-| | `remove_summary_rows` | Remove rows labelled total, subtotal or grand total |
-| | `trim_leading_trailing_rows` | Remove blank rows before the first and after the last populated row |
-| | `filter_rows` | Keep or remove rows by a mask or a callable condition |
-| | `filter_by_date_range` | Keep rows within a reporting period |
-| | `filter_by_value_range` | Keep rows within a numeric range |
-| `core.types` | `convert_data_types` | Convert columns using a dtype map |
-| | `convert_date_columns` | Convert several date columns in one call, with optional formats |
-| | `clean_date_column` | Parse a date series safely |
-| | `clean_numeric_column` | Parse numeric strings, including bracketed negatives |
-| | `clean_boolean_column` | Standardise yes, no, true, false and similar values |
-| `core.missing` | `coerce_empty_to_nan` | Convert placeholders such as `na`, `n/a` and `null` to missing values |
-| | `fill_missing` | Fill missing values with a simple strategy |
-| `core.duplicates` | `find_duplicates` | Return duplicated rows for a subset of columns |
-| | `remove_duplicates` | Remove duplicates, keeping the first or last |
-| | `deduplicate_by_priority` | Keep one row per key according to an explicit sort order |
-| `core.outliers` | `detect_outliers_iqr` | Boolean mask using the interquartile range |
-| | `remove_outliers_iqr` | Drop rows outside the interquartile range fences |
-| | `remove_outliers_zscore` | Drop rows beyond a z-score threshold |
-| | `flag_outliers` | Add an `is_outlier` column instead of dropping data |
-| | `cap_outliers` | Cap values at chosen quantiles |
-| | `winsorize_outliers` | Winsorise values using quantile clipping |
-| `core.text` | `clean_text_column` | Trim and normalise whitespace in free text |
-| | `clean_categorical_column` | Trim and set the case of category labels |
-| | `standardize_text_values` | Map variants to a standard value |
+**core.** The foundation for tidying a raw extract. Column functions such as `clean_column_headers()`, `rename_columns()` and `drop_empty_columns()` fix structure. Row functions such as `remove_repeated_headers()`, `remove_summary_rows()` and `filter_by_date_range()` deal with the leftovers of spreadsheet exports. The level also covers type conversion (`convert_date_columns()`), duplicates (`deduplicate_by_priority()`), missing values, outliers and text standardisation.
 
-### features: feature engineering (7 functions)
+**features.** Prepares data for modelling and period analysis: date parts, period keys, a fiscal calendar (`create_fiscal_calendar_features()`), lag columns and controls on category counts.
 
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `features.datetime` | `extract_date_features` | Add year, month, quarter and related parts |
-| | `create_period_keys` | Add period keys such as `202601` |
-| | `create_fiscal_calendar_features` | Add `fiscal_year` and `fiscal_period`; the year starts in April by default |
-| | `lag_features` | Add grouped lag columns for forecasting and anomaly checks |
-| `features.categorical` | `limit_cardinality` | Keep the top categories and group the rest as `Other` |
-| | `rare_category_handler` | Group categories below a minimum count as `Other` |
-| | `encode_categorical_variables` | One hot encode chosen columns |
+**finance.** Domain logic that general purpose cleaning libraries leave out. It parses currency and percentages, standardises vendor names and reference codes, and applies accounting rules such as sign conventions (`validate_sign_conventions()`) and debit and credit balance checks.
 
-### finance: domain rules (11 functions)
+**validation.** Control checks that either raise an error or return the offending rows: required fields, allowed categories, value ranges, primary keys, referential integrity, time continuity and `reconciliation_check()` for totals before and after a transformation.
 
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `finance.parsing` | `parse_currency` | Strip currency symbols and thousands separators and return numbers |
-| | `parse_percentage` | Return percentages on one consistent scale |
-| | `clean_accounting_negative` | Convert bracketed values such as `(200)` to negative numbers |
-| `finance.entities` | `standardize_entity_names` | Map vendor or customer name variants to a standard name |
-| | `strip_legal_suffixes` | Remove suffixes such as Ltd, Limited, plc, Inc and LLC |
-| | `normalize_reference_codes` | Normalise invoice, purchase order and reference numbers |
-| `finance.rules` | `validate_sign_conventions` | Flag values that break a rule such as `non_negative` or `positive` |
-| | `check_balanced_entries` | Check that debits equal credits, with a tolerance |
-| | `impute_by_rule` | Fill missing values using explicit business rules |
-| | `detect_outliers_groupwise` | Detect outliers within groups such as cost centres |
-| | `seasonality_aware_outliers` | Detect outliers within each period of a time series |
+**reporting.** Describes the data and tracks change: `quick_check()` and `profile_report()` for profiling, `snapshot_dataset()` and `delta_report()` for comparing versions, and `info()` for the function reference itself.
 
-### validation: control checks (9 functions)
+**input_output.** Reads comma separated value and Excel files with existence checks and standard missing value markers, processes large files in chunks, and exports parquet files and JavaScript Object Notation reports.
 
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `validation.schema` | `standardize_schema` | Enforce required columns, with an optional rename map |
-| | `validate_required_fields` | Raise if required columns are missing or fully empty |
-| | `validate_category_set` | Flag values outside an allowed set |
-| `validation.ranges` | `validate_data_ranges` | Report numeric or date values outside stated limits |
-| `validation.integrity` | `assert_primary_key` | Raise if a key is null or duplicated |
-| | `check_referential_integrity` | Return fact rows with no matching dimension key |
-| | `check_time_continuity` | Return dates missing from a regular series |
-| | `check_data_consistency` | Run consistency checks and return the issues |
-| | `reconciliation_check` | Compare totals before and after a transformation |
+**pipelines.** `quick_clean()` and `quick_clean_finance()` chain the most common steps into one call. Read [Known limitations](#known-limitations) before relying on their defaults.
 
-### reporting: profiling and change tracking (10 functions)
-
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `reporting.profiling` | `quick_check` | Print shape, null cells, duplicates, memory use and high missing value columns |
-| | `profile_report` | Return a dictionary with `summary`, `types`, `missingness` and `memory` |
-| | `get_data_summary` | Return a compact summary of the dataset |
-| | `missingness_profile` | Missing counts and percentages by column |
-| | `infer_and_report_types` | Current dtypes with non null and null counts |
-| | `memory_profile` | Memory use by column |
-| | `info` | The function reference table |
-| `reporting.delta` | `snapshot_dataset` | Row counts, dtypes and hashes for a dataset |
-| | `compare_snapshots` | Differences between two snapshots |
-| | `delta_report` | Added, removed and changed keys between two frames |
-
-### input_output, pipelines and utils (10 functions)
-
-| Module | Function | Purpose |
-| --- | --- | --- |
-| `io.readers` | `read_csv_safely` | Read a comma separated value file with existence checks and standard missing value markers |
-| | `read_excel_safely` | Read an Excel sheet with the same safeguards |
-| | `chunked_processing` | Yield chunks of a large file |
-| `io.writers` | `export_parquet` | Write parquet; requires pyarrow |
-| | `export_validation_report` | Write a report dictionary as JavaScript Object Notation |
-| `pipelines.quick_clean` | `quick_clean` | Clean headers, coerce empties, remove duplicates, fill missing values with zero |
-| | `quick_clean_finance` | The same first three steps, then currency parsing, date parsing and a primary key check |
-| `utils.security` | `mask_sensitive_fields` | Replace sensitive values, such as bank details, with a mask |
-| | `anonymize_identifiers` | Hash identifiers with an optional salt |
-| `utils.types` | `optimize_dtypes` | Downcast numeric types to reduce memory use |
+**utils.** Masks or hashes sensitive identifiers before data is shared, and reduces memory use by downcasting numeric types.
 
 ## Worked patterns
 
