@@ -1,426 +1,384 @@
-# 📊 FDA Toolkit
+# Financial Data Analysis Toolkit
 
-> **Financial Data Analysis Made Simple** — A production-grade Python toolkit for loading, cleaning, validating, and analyzing financial data with one-line pipelines.
+This project was motivated by the amount of time finance work loses to preparing data rather than analysing it. Exports from accounting systems and published workbooks arrive with inconsistent headers, repeated header rows, subtotal rows, currency symbols embedded in numbers, mixed date formats and duplicated records. I built the Financial Data Analysis Toolkit (package name `fda-toolkit`) to turn the cleaning and validation steps I repeat in financial analytics projects into one documented, tested Python package that records what it has done to the data.
 
-![FDA Toolkit Banner](https://raw.githubusercontent.com/TeslimAdeyanju/Financial-Data-Analysis-Toolkit-Workspace/main/assets/fda-toolkit-banner.png)
+## The design question
 
-<div style="text-align: center; margin: 20px 0;">
-  <em>Clean. Validate. Analyze. Financial data made simple.</em>
-</div>
+> **How can the routine preparation of financial data be made repeatable, checkable and auditable, so that the cleaned dataset can be reconciled back to its source?**
 
-[![PyPI version](https://img.shields.io/pypi/v/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/fda-toolkit)](https://pypi.org/project/fda-toolkit/)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+**What the toolkit provides:** 87 registered functions across eight levels, covering column and row cleaning, type conversion, duplicates, outliers, finance specific parsing and rules, validation, profiling, snapshot comparison, safe file input and output, and two ready made cleaning pipelines. Version 0.4.1 is published on the [Python Package Index](https://pypi.org/project/fda-toolkit/).
 
-## Why FDA Toolkit?
+**How I built it:** Each function is a small, typed operation on a pandas `DataFrame` or `Series` that returns a new object by default. Functions register themselves in a central registry, which is how `info()` produces a live function reference. Most functions also write an event to an in memory audit log so that a cleaning run can be reviewed afterwards.
 
-Financial data analysis is messy. You spend **80% of your time** cleaning, validating, and transforming data instead of analyzing it. FDA Toolkit eliminates that pain by providing:
+**Why it matters:** Financial data is only useful if the person using it can show what changed between the source file and the analysis. The reconciliation and snapshot functions exist to answer that question with totals and row counts, not assertion.
 
-- **87 production-ready functions** grouped into 8 intelligent modules
-- **One-line pipelines** for common workflows (e.g., `ftk.quick_clean_finance()`)
-- **Finance-aware validation** — understand sign conventions, entity names, currency formats
-- **Audit trail** — every operation logged for compliance and debugging
-- **Type-safe** — full type hints and IDE autocomplete throughout
-- **Memory efficient** — optimize dtypes, handle large files with chunking
-- **Professional API** — pandas-like, intuitive, well-documented
+**Basis and limitations:** The behaviour described in this document was checked by running the code against pandas 2.3.3 on Python 3.13, with the 16 repository tests passing. Several limitations were found during that check and are listed under [Known limitations](#known-limitations), including a compatibility problem with pandas 3. The package is classified as Beta.
 
+## Package at a glance
 
+| Level | Functions | Purpose |
+| --- | ---: | --- |
+| `core` | 40 | Column and row cleaning, type conversion, duplicates, missing values, outliers and text |
+| `features` | 7 | Date, fiscal calendar, lag and categorical feature engineering |
+| `finance` | 11 | Currency and percentage parsing, entity names, sign conventions and entry balance checks |
+| `validation` | 9 | Schema, range, key, referential integrity, time continuity and reconciliation checks |
+| `reporting` | 10 | Profiling, missing value and memory reports, snapshots, delta reports and the `info()` reference |
+| `input_output` | 5 | Safe reading of comma separated value and Excel files, chunked processing, parquet and report export |
+| `pipelines` | 2 | `quick_clean()` and `quick_clean_finance()` |
+| `utils` | 3 | Identifier masking, identifier hashing and memory optimisation |
+| **Total** | **87** | |
 
-## Module Overview
+The audit logging helpers (`AuditLog`, `audit_log`, `get_global_audit_log`, `reset_audit_log`) sit in `fda_toolkit.utils.logging` and are not counted in the 87 registered functions.
 
-| Module | Functions | Purpose |
-|--------|-----------|---------|
-| **core** | 40 | Column and row cleaning, types, duplicates, missing, outliers, text |
-| **features** | 7 | Date & categorical feature engineering |
-| **finance** | 11 | Currency parsing, entity standardization, financial validation |
-| **validation** | 9 | Schema, ranges, integrity, reconciliation |
-| **reporting** | 10 | Profiling, snapshots, delta reports, quick checks |
-| **io** | 5 | Safe CSV/Excel reading, chunked processing, parquet export |
-| **pipelines** | 2 | Pre-built `quick_clean()` and `quick_clean_finance()` |
-| **utils** | 6 | Logging, security, memory optimization |
-| **TOTAL** | **87** | Production-ready functions |
-
-
-
-
-## Quick Start
-
-### Install
+## Installation
 
 ```bash
 pip install fda-toolkit
 ```
 
-### Update to Latest Version
+To install from source for development:
 
-**Using pip:**
+```bash
+git clone https://github.com/CoreInsightFinance/Financial-Data-Analysis-Toolkit-Workspace.git
+cd Financial-Data-Analysis-Toolkit-Workspace
+pip install -e ".[dev]"
+```
+
+| Requirement | Version | Notes |
+| --- | --- | --- |
+| Python | 3.10 or later | Declared in `pyproject.toml`; classifiers list 3.10, 3.11 and 3.12 |
+| pandas | 2.0 or later | Use a 2.x release for now; see [Known limitations](#known-limitations) |
+| numpy | 1.24 or later | |
+| jinja2 | 3.1 or later | Required for the styled table returned by `info()` |
+| pyarrow | Optional | Required only by `export_parquet()` |
+| pytest, ruff, mypy | Optional | Installed by the `dev` extra |
+
+To upgrade an existing installation:
+
 ```bash
 pip install --upgrade fda-toolkit
 ```
 
-**Using uv (faster):**
-```bash
-uv pip install --upgrade fda-toolkit
-```
-
-**In Jupyter Notebooks:**
-```python
-# Add this to a cell and run it
-%pip install --upgrade fda-toolkit
-
-# Or with uv
-!uv pip install --upgrade fda-toolkit
-
-# Then restart your kernel
-```
-
-**For Projects with requirements.txt:**
-```bash
-# Update the version in requirements.txt
-fda-toolkit>=0.4.1
-
-# Then reinstall
-pip install -r requirements.txt --upgrade
-# or with uv
-uv pip install -r requirements.txt
-```
-
-### Check Version
-
 ```python
 import fda_toolkit as ftk
-print(ftk.__version__)  # Should show 0.4.1 or later
+print(ftk.__version__)  # 0.4.1
 ```
 
-### Use in 3 Lines
+## Quick start
+
+The example below loads a small set of transactions with typical problems: untidy headers, a duplicated row, a currency symbol, a missing date and a blank amount.
 
 ```python
+import pandas as pd
 import fda_toolkit as ftk
 
-df = ftk.read_csv_safely("data/transactions.csv")
-df_clean = ftk.quick_clean_finance(df, primary_key="transaction_id", 
-                                   date_cols=["date"], currency_cols=["amount"])
-ftk.quick_check(df_clean)  # Profile results
-```
+df = pd.DataFrame({
+    "Transaction ID": ["T1", "T2", "T2", "T3"],
+    "Vendor ": ["Acme Ltd", "ACME LIMITED", "ACME LIMITED", "Beta plc"],
+    "Date": ["01/01/2026", "02/01/2026", "02/01/2026", ""],
+    "Amount": ["£1,000", "£200", "£200", "n/a"],
+})
 
-### Discover All Functions
-
-```python
-# See all 87 available functions and their details
-ftk.info()
-
-# Sort functions into the eight package levels
-ftk.info('level')
-
-# Filter by level (the level= form is also supported)
-ftk.info('finance')
-
-# Filter by module
-ftk.info(module='finance.parsing')
-
-# Combine filters
-ftk.info(level='finance', module='finance.parsing')
-```
-
-The `detail` column gives a short note on what each function does.
-
----
-
-## 📚 What's Inside?
-
-### Core Data Cleaning (40 functions)
-Handle the fundamentals with confidence:
-
-```python
-from fda_toolkit import core
-
-df = core.clean_column_headers(df)               # 'Name ' → 'name'
-df = core.drop_empty_columns(df)                 # Remove entirely blank columns
-df = core.drop_empty_rows(df)                    # Remove entirely blank rows
-df = core.remove_repeated_headers(df)            # Remove headers embedded in data
-df = core.convert_date_columns(df, ['date'])     # Convert several date columns
-groups = core.classify_columns(df)               # Group columns by data type
-```
-
-### Finance-Specific (11 functions)
-Domain expertise built-in:
-
-```python
-from fda_toolkit.finance import parsing, entities, rules
-
-df['amount'] = parsing.parse_currency(df['amount'])        # Handle $, €, £
-df['vendor'] = entities.strip_legal_suffixes(df['vendor']) # ACME Ltd → ACME
-rules.validate_sign_conventions(df, rules_config)          # Verify debit/credit
-```
-
-### Feature Engineering (7 functions)
-Prepare data for ML in seconds:
-
-```python
-from fda_toolkit.features import datetime, categorical
-
-df = datetime.extract_date_features(df, 'date')  # Add year, month, quarter
-df['category'] = categorical.limit_cardinality(df['category'], top_n=10)
-```
-
-### Validation Suite (9 functions)
-Catch issues before they become problems:
-
-```python
-from fda_toolkit.validation import schema, ranges, integrity
-
-schema.validate_required_fields(df, ['id', 'date', 'amount'])
-violations = ranges.validate_data_ranges(df, {'amount': (0, 1_000_000)})
-integrity.reconciliation_check(original_df, clean_df, value_cols=['amount'])
-```
-
-### Smart Pipelines (2 functions)
-Pre-built, battle-tested workflows:
-
-```python
-# Generic pipeline
-df_clean = ftk.quick_clean(df)
-
-# Finance pipeline (smart defaults for financial data)
-df_clean = ftk.quick_clean_finance(
+# One call applies header cleaning, empty value handling, de-duplication,
+# currency parsing, date parsing and a primary key check
+clean = ftk.quick_clean_finance(
     df,
-    primary_key="invoice_id",
-    date_cols=["invoice_date", "due_date"],
-    currency_cols=["amount", "tax"]
+    primary_key="transaction_id",   # headers are cleaned first, so use the cleaned name
+    date_cols=["date"],
+    currency_cols=["amount"],
 )
+
+ftk.quick_check(clean)              # prints shape, null cells, duplicates and memory use
 ```
 
-### Reporting & Profiling (10 functions)
-Understand your data instantly:
+```text
+  transaction_id        vendor       date  amount
+0             T1      Acme Ltd 2026-01-01  1000.0
+1             T2  ACME LIMITED 2026-01-02   200.0
+3             T3      Beta plc        NaT     NaN
+```
+
+Dates are read day first by default, which suits UK source data. Pass `dayfirst=False` to `clean_date_column()` or `convert_date_columns()` where the source uses month first dates.
+
+To browse the available functions:
 
 ```python
-# Quick diagnosis
-ftk.quick_check(df)
-
-# Detailed profile
-profile = ftk.profile_report(df)  # Types, missingness, memory, outliers
-
-# Track changes
-snapshot_v1 = ftk.snapshot_dataset(df_before, name="before_clean")
-snapshot_v2 = ftk.snapshot_dataset(df_after, name="after_clean")
-delta = ftk.compare_snapshots(snapshot_v1, snapshot_v2)
+ftk.info()                          # every function, ordered by level
+ftk.info("finance")                 # one level
+ftk.info("level")                   # explicit sort; also "module", "function" or "detail"
+ftk.info(module="finance.parsing")  # one module
 ```
 
-### Secure I/O (5 functions)
-Read and write without surprises:
+`info()` returns a styled table with the columns `level`, `module`, `function` and `detail`.
 
-```python
-# Safe reading with encoding detection
-df = ftk.read_csv_safely("messy_file.csv")
-df = ftk.read_excel_safely("workbook.xlsx", sheet_name="Data")
+## Architecture
 
-# Process huge files in chunks
-for chunk in ftk.chunked_processing("huge_file.csv", chunksize=50_000):
-    process(chunk)
+### Package layout
 
-# Export in optimized formats
-ftk.export_parquet(df, "output.parquet")  # Fast, compressed
+```text
+src/fda_toolkit/
+    __init__.py          Public imports and __version__
+    registry.py          register_function decorator and FUNCTION_REGISTRY
+    core/                columns, rows, types, missing, duplicates, outliers, text
+    features/            categorical, datetime
+    finance/             parsing, entities, rules
+    validation/          schema, ranges, integrity
+    reporting/           profiling, delta
+    io/                  readers, writers
+    pipelines/           quick_clean
+    utils/               logging, security, types
+tests/                   test_core_cleaning.py, test_info.py, test_smoke_imports.py
+examples/                01_quick_check.py
+docs/                    function_reference.md
 ```
 
+### How functions are discovered
 
-
-## Architecture: Dynamic & Scalable
-
-Every function **self-registers** via decorator — no manual `__all__` lists:
+Each public function carries a `@register_function(name=..., category=..., module=...)` decorator. Importing the package populates a global dictionary, `FUNCTION_REGISTRY`, and `info()` reads from it. Adding a function with the decorator is enough for it to appear in the reference table.
 
 ```python
 from fda_toolkit.registry import register_function
 
-@register_function(
-    name="detect_fraud",
-    category="Validation",
-    module="custom.fraud"
-)
-def detect_fraud(df: pd.DataFrame) -> pd.DataFrame:
-    """Your custom logic here."""
-    result = df[df['amount'] > threshold]
-    audit_log("detect_fraud", before=len(df), after=len(result))
-    return result
-
-# Automatically appears in ftk.info()!
+@register_function(name="flag_large_payments", category="Validation", module="custom.payments")
+def flag_large_payments(df, threshold=10_000):
+    """Return rows where the amount exceeds a threshold."""
+    return df[df["amount"] > threshold]
 ```
 
----
+Functions can be called from the top level (`ftk.parse_currency`) or from their level (`from fda_toolkit import core`, then `core.drop_empty_rows(df)`).
 
-## Audit Trail (Compliance Ready)
+### Conventions used across the package
 
-Every operation is logged automatically:
+- **Copy by default.** Functions that change a `DataFrame` take `copy=True` and return a new object, so the source frame is left untouched.
+- **Type hints throughout.** Signatures are annotated and the project configures strict mypy settings.
+- **Explicit rules over inference.** Functions that need business judgement, such as `impute_by_rule()`, `validate_sign_conventions()` and `standardize_entity_names()`, take the rule or mapping as an argument rather than guessing.
+- **Finance defaults.** The currency parser recognises the pound, dollar, euro and naira symbols, and `create_fiscal_calendar_features()` starts the fiscal year in April.
+
+## Function reference
+
+### core: cleaning fundamentals (40 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `core.columns` | `clean_column_headers` | Standardise headers: lower case, underscores, no punctuation |
+| | `make_unique_columns` | Append numeric suffixes to duplicate column names |
+| | `rename_columns` | Rename with checks for missing names and duplicate results |
+| | `select_columns` | Keep chosen columns in the requested order |
+| | `reorder_columns` | Move chosen columns to the front |
+| | `combine_columns` | Join several columns into one text column |
+| | `split_column` | Split one text column into named columns |
+| | `classify_columns` | Group columns into numerical, categorical, datetime and boolean |
+| | `select_columns_by_type` | Return the names or data for one classified type |
+| | `drop_empty_columns` | Remove columns that are entirely blank |
+| | `drop_constant_columns` | Remove columns holding one distinct value |
+| | `drop_sparse_columns` | Remove columns above a missing value threshold |
+| `core.rows` | `drop_empty_rows` | Remove entirely blank rows |
+| | `drop_sparse_rows` | Remove rows above a missing value threshold |
+| | `drop_missing_required` | Remove rows with blanks in required columns |
+| | `remove_repeated_headers` | Remove header rows repeated inside the data |
+| | `remove_summary_rows` | Remove rows labelled total, subtotal or grand total |
+| | `trim_leading_trailing_rows` | Remove blank rows before the first and after the last populated row |
+| | `filter_rows` | Keep or remove rows by a mask or a callable condition |
+| | `filter_by_date_range` | Keep rows within a reporting period |
+| | `filter_by_value_range` | Keep rows within a numeric range |
+| `core.types` | `convert_data_types` | Convert columns using a dtype map |
+| | `convert_date_columns` | Convert several date columns in one call, with optional formats |
+| | `clean_date_column` | Parse a date series safely |
+| | `clean_numeric_column` | Parse numeric strings, including bracketed negatives |
+| | `clean_boolean_column` | Standardise yes, no, true, false and similar values |
+| `core.missing` | `coerce_empty_to_nan` | Convert placeholders such as `na`, `n/a` and `null` to missing values |
+| | `fill_missing` | Fill missing values with a simple strategy |
+| `core.duplicates` | `find_duplicates` | Return duplicated rows for a subset of columns |
+| | `remove_duplicates` | Remove duplicates, keeping the first or last |
+| | `deduplicate_by_priority` | Keep one row per key according to an explicit sort order |
+| `core.outliers` | `detect_outliers_iqr` | Boolean mask using the interquartile range |
+| | `remove_outliers_iqr` | Drop rows outside the interquartile range fences |
+| | `remove_outliers_zscore` | Drop rows beyond a z-score threshold |
+| | `flag_outliers` | Add an `is_outlier` column instead of dropping data |
+| | `cap_outliers` | Cap values at chosen quantiles |
+| | `winsorize_outliers` | Winsorise values using quantile clipping |
+| `core.text` | `clean_text_column` | Trim and normalise whitespace in free text |
+| | `clean_categorical_column` | Trim and set the case of category labels |
+| | `standardize_text_values` | Map variants to a standard value |
+
+### features: feature engineering (7 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `features.datetime` | `extract_date_features` | Add year, month, quarter and related parts |
+| | `create_period_keys` | Add period keys such as `202601` |
+| | `create_fiscal_calendar_features` | Add `fiscal_year` and `fiscal_period`; the year starts in April by default |
+| | `lag_features` | Add grouped lag columns for forecasting and anomaly checks |
+| `features.categorical` | `limit_cardinality` | Keep the top categories and group the rest as `Other` |
+| | `rare_category_handler` | Group categories below a minimum count as `Other` |
+| | `encode_categorical_variables` | One hot encode chosen columns |
+
+### finance: domain rules (11 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `finance.parsing` | `parse_currency` | Strip currency symbols and thousands separators and return numbers |
+| | `parse_percentage` | Return percentages on one consistent scale |
+| | `clean_accounting_negative` | Convert bracketed values such as `(200)` to negative numbers |
+| `finance.entities` | `standardize_entity_names` | Map vendor or customer name variants to a standard name |
+| | `strip_legal_suffixes` | Remove suffixes such as Ltd, Limited, plc, Inc and LLC |
+| | `normalize_reference_codes` | Normalise invoice, purchase order and reference numbers |
+| `finance.rules` | `validate_sign_conventions` | Flag values that break a rule such as `non_negative` or `positive` |
+| | `check_balanced_entries` | Check that debits equal credits, with a tolerance |
+| | `impute_by_rule` | Fill missing values using explicit business rules |
+| | `detect_outliers_groupwise` | Detect outliers within groups such as cost centres |
+| | `seasonality_aware_outliers` | Detect outliers within each period of a time series |
+
+### validation: control checks (9 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `validation.schema` | `standardize_schema` | Enforce required columns, with an optional rename map |
+| | `validate_required_fields` | Raise if required columns are missing or fully empty |
+| | `validate_category_set` | Flag values outside an allowed set |
+| `validation.ranges` | `validate_data_ranges` | Report numeric or date values outside stated limits |
+| `validation.integrity` | `assert_primary_key` | Raise if a key is null or duplicated |
+| | `check_referential_integrity` | Return fact rows with no matching dimension key |
+| | `check_time_continuity` | Return dates missing from a regular series |
+| | `check_data_consistency` | Run consistency checks and return the issues |
+| | `reconciliation_check` | Compare totals before and after a transformation |
+
+### reporting: profiling and change tracking (10 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `reporting.profiling` | `quick_check` | Print shape, null cells, duplicates, memory use and high missing value columns |
+| | `profile_report` | Return a dictionary with `summary`, `types`, `missingness` and `memory` |
+| | `get_data_summary` | Return a compact summary of the dataset |
+| | `missingness_profile` | Missing counts and percentages by column |
+| | `infer_and_report_types` | Current dtypes with non null and null counts |
+| | `memory_profile` | Memory use by column |
+| | `info` | The function reference table |
+| `reporting.delta` | `snapshot_dataset` | Row counts, dtypes and hashes for a dataset |
+| | `compare_snapshots` | Differences between two snapshots |
+| | `delta_report` | Added, removed and changed keys between two frames |
+
+### input_output, pipelines and utils (10 functions)
+
+| Module | Function | Purpose |
+| --- | --- | --- |
+| `io.readers` | `read_csv_safely` | Read a comma separated value file with existence checks and standard missing value markers |
+| | `read_excel_safely` | Read an Excel sheet with the same safeguards |
+| | `chunked_processing` | Yield chunks of a large file |
+| `io.writers` | `export_parquet` | Write parquet; requires pyarrow |
+| | `export_validation_report` | Write a report dictionary as JavaScript Object Notation |
+| `pipelines.quick_clean` | `quick_clean` | Clean headers, coerce empties, remove duplicates, fill missing values with zero |
+| | `quick_clean_finance` | The same first three steps, then currency parsing, date parsing and a primary key check |
+| `utils.security` | `mask_sensitive_fields` | Replace sensitive values, such as bank details, with a mask |
+| | `anonymize_identifiers` | Hash identifiers with an optional salt |
+| `utils.types` | `optimize_dtypes` | Downcast numeric types to reduce memory use |
+
+## Worked patterns
+
+### Controlling a transformation with reconciliation
+
+`reconciliation_check()` compares column totals before and after a step and reports the movement.
 
 ```python
-from fda_toolkit.utils.logging import get_global_audit_log
+before = pd.DataFrame({"amount": [1, 2, 3, 4]})
+after = pd.DataFrame({"amount": [1, 2, 3]})
+
+ftk.reconciliation_check(before, after, value_cols=["amount"])
+```
+
+```text
+   column  before  after  delta
+0  amount      10      6     -4
+```
+
+Pass `group_cols` to reconcile by vendor, cost centre or period.
+
+### Validating sign conventions
+
+Rules are stated per column. The available rules are `non_negative`, `non_positive`, `positive` and `negative`. The function returns a frame of boolean flags, with `True` marking a breach.
+
+```python
+ftk.validate_sign_conventions(
+    pd.DataFrame({"revenue": [10, -5]}),
+    {"revenue": "non_negative"},
+)
+```
+
+### Comparing two versions of a dataset
+
+```python
+snapshot = ftk.snapshot_dataset(df_before, key_cols=["id"])
+delta = ftk.delta_report(df_before, df_after, key_col="id")
+# {'total_added': 0, 'total_removed': 1, 'total_changed': 0, 'total_unchanged': 2,
+#  'added_keys': [], 'removed_keys': [3], 'changed_keys': []}
+```
+
+### Protecting sensitive fields before sharing
+
+```python
+safe = ftk.mask_sensitive_fields(df, columns=["iban"])                 # replaced with ***
+safe = ftk.anonymize_identifiers(df, columns=["employee_id"], salt="x")  # hashed
+```
+
+## Audit trail
+
+Nearly every function calls `audit_log()` when it runs. Events collect in a single global `AuditLog` for the session.
+
+```python
+from fda_toolkit.utils.logging import get_global_audit_log, reset_audit_log
 
 log = get_global_audit_log()
-
-for event in log.events:
-    print(f"✓ {event.name} at {event.timestamp_utc}")
-
-# Export for compliance teams
-audit_json = log.to_dict()  # JSON-ready
+len(log)           # number of events recorded
+log.to_list()      # [{'name': 'clean_column_headers', 'timestamp_utc': '2026-11-14T16:42:50', ...}]
+log.to_dict()      # {'events': [...]}, ready to serialise
+reset_audit_log()  # start a clean log
 ```
 
----
+The audit trail has these properties, which matter if you intend to rely on it:
 
-## 💡 Real-World Example
-
-```python
-import fda_toolkit as ftk
-
-# 1. Load and diagnose
-df = ftk.read_csv_safely("sales_transactions_2024.csv")
-ftk.quick_check(df)
-# → Reports: types, missing %, duplicates, outliers, memory usage
-
-# 2. Clean for analysis
-df_clean = ftk.quick_clean_finance(
-    df,
-    primary_key="transaction_id",
-    date_cols=["date", "due_date"],
-    currency_cols=["amount", "tax"]
-)
-
-# 3. Validate
-from fda_toolkit.validation import integrity
-integrity.reconciliation_check(
-    original=df, 
-    cleaned=df_clean,
-    value_cols=["amount"],
-    group_cols=["vendor_id"]
-)
-
-# 4. Engineer features for ML
-df_ml = ftk.extract_date_features(df_clean, "date")
-df_ml = ftk.limit_cardinality(df_ml, "vendor", top_n=20)
-
-# 5. Export and log
-ftk.export_parquet(df_ml, "ready_for_ml.parquet")
-print("✅ Pipeline complete with full audit trail!")
-```
-
----
-
-
----
+- It lives in memory for the current Python session. Nothing is written to disk unless you export it yourself, for example with `export_validation_report()`.
+- It is global, so events from separate tasks in the same session share one log. Call `reset_audit_log()` at the start of each run.
+- Event details are shortened to the first 100 characters, so the log records that a step ran and a sketch of its result, not a full copy of the data.
+- Timestamps are in UTC.
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
-
-# Run specific module
-pytest tests/test_core/
-
-# Verbose output
-pytest -v
-```
-
-Example test:
-```python
-import pandas as pd
-from fda_toolkit.core.columns import clean_column_headers
-
-def test_clean_headers():
-    df = pd.DataFrame({'Name ': [1], 'Age (years)': [2]})
-    result = clean_column_headers(df)
-    assert result.columns.tolist() == ['name', 'age_years']
-```
-
----
-
-## Installation & Development
-
-### From Source
-
-```bash
-# Clone or download
-cd fda_toolkit_project
-
-# Install in editable mode (dev)
-pip install -e .
-
-# With dev dependencies (if available)
 pip install -e ".[dev]"
+pytest
 ```
 
-### Requirements
+The suite contains 16 tests in three files: `test_core_cleaning.py` for the cleaning functions, `test_info.py` for the reference table, and `test_smoke_imports.py` for package imports. All 16 pass on pandas 2.3.3. The tests currently emit deprecation warnings from pandas about the `inplace` argument, which do not affect results.
 
-- Python 3.9+
-- pandas (data manipulation)
-- numpy (numerical operations)
+The tests do not yet cover the finance, validation, pipeline or input and output modules. The limitations below were found in code paths the tests do not reach.
 
----
+## Known limitations
 
-## Security & Compliance
+These were found while checking this document against the code. They describe the package as it stands at version 0.4.1.
 
-- **Audit logging** — Every operation tracked with timestamps
-- **Data masking** — `mask_sensitive_fields()` for PII protection
-- **Type safety** — Full type hints prevent common errors
-- **Error handling** — Clear, actionable error messages
-- **Memory optimization** — Control data footprint
+| Area | Behaviour | Workaround |
+| --- | --- | --- |
+| pandas 3 | `parse_currency()` rejects pandas 3 string columns because it checks for the `object` dtype. `quick_clean_finance()` fails when `currency_cols` is used. The package declares `pandas>=2.0` with no upper bound, so a fresh installation can pick up pandas 3. | Install `pandas<3` |
+| Bracketed currency | `parse_currency()` does not read brackets, so `(200)` becomes a missing value. | Use `clean_accounting_negative()` on that column |
+| Accounting negatives | `clean_accounting_negative()` returns a missing value for numbers containing thousands separators, such as `1,000` or `(1,250.50)`, and for values with a currency symbol. | Remove symbols and separators first, or use `clean_numeric_column()` |
+| Balanced entries | `check_balanced_entries()` raises an error when `group_cols` is supplied. The row level check works. | Group the data yourself and call the function on each group |
+| Primary key in pipeline | `quick_clean_finance()` logs a failed primary key check to the audit log instead of raising, although its docstring says it raises. | Call `assert_primary_key()` directly after the pipeline |
+| Encoding detection | `read_csv_safely()` passes `encoding` straight to pandas, so no automatic detection takes place. | Supply `encoding="latin-1"` or similar for non UTF-8 files |
+| Zero fill | `quick_clean()` fills every remaining missing value with zero, which is rarely right for financial amounts. | Use the individual functions when zero is not a valid substitute |
+| Placeholder functions | `validate_business_rules()` and `exception_report()` raise `NotImplementedError` and are not registered. | None; they are planned |
+| Parquet | `export_parquet()` needs pyarrow, which is not installed with the package. | `pip install pyarrow` |
 
----
+## Documentation and project files
 
-## 📖 API Reference
+| Resource | Contents |
+| --- | --- |
+| [Changelog](CHANGELOG.md) | Release history from 0.2.8 to 0.4.1 |
+| [Quick reference](QUICK_REFERENCE.md) | Short usage patterns |
+| [Examples](examples/) | Example scripts |
+| `ftk.info()` | The authoritative, always current function list |
 
-Explore the full API:
+**Source and licence:** The package is released under the MIT Licence, as declared in `pyproject.toml`. Package metadata is in [pyproject.toml](pyproject.toml).
 
-```python
-ftk.info()                           # List all functions
-ftk.info("finance")                  # Filter by package level
-ftk.get_data_summary(df)            # Profile a dataset
-ftk.profile_report(df)              # Detailed analysis
-```
+## Author
 
-For detailed docs on each function:
-```python
-from fda_toolkit.core.outliers import detect_outliers_iqr
-help(detect_outliers_iqr)  # Full docstring with examples
-```
-
-See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for common patterns.
-
----
-
-## 🎯 Use Cases
-
-✅ **Financial Reporting** — Prepare data for compliance audits  
-✅ **ML Pipelines** — Clean & engineer features for models  
-✅ **Data Migration** — Validate and transform during transfers  
-✅ **Anomaly Detection** — Flag outliers in transactions  
-✅ **Time Series Analysis** — Extract date features automatically  
-✅ **Data Quality Monitoring** — Profile and compare snapshots  
-
----
-
-## 🚀 Next Steps
-
-1. **Explore functions**: `ftk.info()`
-2. **Try examples**: See [examples/01_quick_check.py](examples/01_quick_check.py)
-3. **Read docs**: [docs/function_reference.md](docs/function_reference.md)
-4. **Run tests**: `pytest`
-5. **Extend**: Add your own functions using `@register_function`
-
----
-
-## 📝 License
-
-MIT License — see LICENSE for details.
-
----
-
-## 🤝 Contributing
-
-Found a bug? Have an idea? Open an issue or PR!
-
----
-
-**Built for financial analysts who value time, accuracy, and peace of mind.** 📊✨
-
-*FDA Toolkit: Where data cleaning stops being painful and starts being productive.*
+**Teslim Adeyanju** | [Portfolio](https://adeyanjuteslim.co.uk) | [LinkedIn](https://www.linkedin.com/in/adeyanjuteslimuthman)
